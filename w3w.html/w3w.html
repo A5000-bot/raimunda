@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Almoxarifado - Controle de Estoque </title>
+  <style>
+    body { font-family: Poppins, Arial, sans-serif; background: #f4faff; color: #102040; margin: 0; padding: 0; }
+    h1 { color: #102040; text-align: center; margin-top: 30px; }
+    .container { max-width: 700px; margin: 30px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 18px #10204033; padding: 30px; }
+    label { font-weight: 600; color: #153060; }
+    input, select { padding: 8px; border-radius: 6px; border: 1.5px solid #153060; margin-bottom: 12px; width: 100%; background: #f4faff; color: #102040; }
+    button {
+      background: #153060;
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 5px 12px; /* Diminuído */
+      font-weight: 700;
+      font-size: 0.90rem; /* Menor */
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    button:hover { background: #102040; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; background: #fff; }
+    th, td { border: 1px solid #b0bed9; padding: 10px; text-align: center; }
+    th { background: #e3eaf7; color: #102040; }
+    .saida { color: #d32f2f; }
+    .entrada { color: #388e3c; }
+    .logo-empresa {
+      position: absolute;
+      top: 30px;
+      left: 40px;
+      height: 60px;
+      z-index: 10;
+    }
+    @media (max-width: 700px) {
+      .logo-empresa {
+        top: 16px;
+        left: 10px;
+        height: 40px;
+      }
+    }
+    .popup-reposicao {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 2px solid #d32f2f;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px #0003;
+      padding: 32px 24px;
+      z-index: 9999;
+      color: #d32f2f;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+      min-width: 260px;
+      max-width: 90vw;
+    }
+    .popup-reposicao button {
+      margin-top: 18px;
+      background: #d32f2f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 22px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .popup-reposicao button:hover {
+      background: #b71c1c;
+    }
+    #avisoCarrinho {
+      display: none;
+      background: #cdf0d8;
+      color: #217a3c;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      font-weight: 600;
+      font-size: 1em;
+      text-align: center;
+      box-shadow: 0 2px 6px #217a3c80;
+      opacity: 1;
+      transition: opacity 0.6s ease;
+    }
+    /* Estilos para o carrinho de retirada */
+    @keyframes carrinhoFadeIn {
+      from { opacity: 0; transform: translateY(40px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .carrinho-titulo {
+      background: linear-gradient(90deg,#153060 60%,#3e5a9b 100%);
+      padding: 20px 28px 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 2px 8px #15306022;
+    }
+    .carrinho-titulo h3 {
+      color: #fff;
+      margin: 0;
+      font-size: 1.22rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .carrinho-titulo svg {
+      flex-shrink: 0;
+    }
+    .carrinho-fechar {
+      background: transparent;
+      border: none;
+      font-size: 2rem;
+      line-height: 1;
+      color: #fff;
+      cursor: pointer;
+      padding: 0 10px 0 10px;
+      transition: color 0.2s;
+    }
+    .carrinho-fechar:hover {
+      color: #ffd700;
+    }
+    .carrinho-table {
+      width: 100%;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 8px #15306011;
+      margin-top: 18px;
+      overflow: hidden;
+    }
+    .carrinho-table th, .carrinho-table td {
+      padding: 12px 8px;
+      font-size: 1em;
+    }
+    .carrinho-table th {
+      background: #e3eaf7;
+      color: #153060;
+      font-weight: 700;
+      font-size: 1.01em;
+    }
+    .carrinho-table td {
+      background: #f9fbfd;
+      color: #102040;
+      vertical-align: middle;
+    }
+    .carrinho-remover-btn {
+      background: #d32f2f;
+      color: #fff;
+      border-radius: 8px;
+      border: none;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 1.1em;
+      transition: background 0.2s;
+    }
+    .carrinho-remover-btn:hover {
+      background: #b71c1c;
+    }
+    .carrinho-obs {
+      max-width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.98em;
+      color: #555;
+    }
+    .carrinho-vazio {
+      color: #888;
+      text-align: center;
+      margin-top: 22px;
+      font-size: 1.12em;
+      display: none;
+    }
+    .carrinho-acoes {
+      margin-top: 22px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 0 18px;
+    }
+    .carrinho-finalizar-btn {
+      background: linear-gradient(90deg,#153060 60%,#3e5a9b 100%);
+      color: #fff;
+      border-radius: 10px;
+      font-weight: 700;
+      padding: 12px 32px;
+      border: none;
+      font-size: 1.13em;
+      box-shadow: 0 2px 8px #15306022;
+      cursor: pointer;
+      opacity: 0.97;
+      letter-spacing: 0.5px;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .carrinho-finalizar-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .carrinho-aviso {
+      display: none;
+      background: linear-gradient(90deg, #d4f7e2 0%, #b2f7ef 100%);
+      color: #217a3c;
+      border-radius: 0 0 12px 12px;
+      padding: 10px 18px;
+      margin: 0 18px 12px 18px;
+      font-weight: 700;
+      font-size: 1.05em;
+      text-align: center;
+      box-shadow: 0 2px 12px #38f9d755;
+      opacity: 1;
+      transition: opacity 0.7s;
+    }
+    .carrinho-aviso-erro {
+      display: none;
+      background: linear-gradient(90deg, #ffe0e0 0%, #ffe9b2 100%);
+      color: #d32f2f;
+      border-radius: 0 0 12px 12px;
+      padding: 10px 18px;
+      margin: 0 18px 12px 18px;
+      font-weight: 700;
+      font-size: 1.05em;
+      text-align: center;
+      box-shadow: 0 2px 12px #d32f2f22;
+      opacity: 1;
+      transition: opacity 0.7s;
+    }
+  </style>
+</head>
+<body>
+  <img src="www.png" alt="Logo da Empresa" class="logo-empresa" />
+  <!-- Barra de pesquisa fixa no canto superior direito -->
+  <div style="position: absolute; top: 30px; right: 40px; z-index: 11; width: 160px; max-width: 70vw;">
+    <form id="formPesquisa" style="margin-bottom:0;">
+      <input
+        type="text"
+        id="pesquisa"
+        placeholder="Pesquisar peça..."
+        style="width:100%;padding:6px 8px;font-size:0.92rem;border-radius:16px;border:1.5px solid #153060;color:#102040;background:#f4faff;box-shadow:0 2px 8px #e3eaf7;"
+      />
+    </form>
+  </div>
+  <!-- Banner azul marinho com letras brancas -->
+  <div
+    style="
+      width: 100%;
+      background: #102040;
+      color: #fff;
+      text-align: center;
+      padding: 18px 0 14px 0;
+      font-size: 2rem;
+      font-family: Poppins, Arial, sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+    "
+  >
+    Controle De Estoque - W3W Serviços Odontológicos
+  </div>
+  <div class="container">
+    <!-- Escolha de operação antes do usuário -->
+    <form id="formOperacao" style="margin-bottom: 18px;">
+      <label>O que deseja fazer?</label>
+      <select id="operacao" required>
+        <option value="">Selecione</option>
+        <option value="entrada">Adicionar peças</option>
+        <option value="saida">Retirar peças</option>
+      </select>
+      <button type="submit">Continuar</button>
+    </form>
+    <!-- Formulário para entrada do usuário -->
+    <form id="formUsuario" style="margin-bottom: 18px; display: none;">
+      <label>Usuário que vai retirar:</label>
+      <input type="text" id="usuario" required style="margin-bottom: 10px;" />
+      <button type="submit">Entrar</button>
+    </form>
+    <!-- Formulário para produtos -->
+    <form id="formProduto" style="display: none;">
+      <label>Código da Peça:</label>
+      <input type="text" id="codigo" required />
+      <!-- Remova ou esconda este bloco quando for retirada -->
+      <label id="labelProduto">Peça:</label>
+      <input type="text" id="produto" required />
+      <label>Quantidade:</label>
+      <input type="number" id="quantidade" min="1" required />
+
+      <label>Tipo de Movimento:</label>
+      <select id="tipo" required>
+        <option value="">Selecione</option>
+        <option value="entrada">Entrada</option>
+        <option value="saida">Saída</option>
+      </select>
+
+      <!-- Área de observação, aparece apenas para retirada -->
+      <div id="obsBox" style="display:none;">
+       <label for="observacao">Observação:</label>
+    <textarea id="observacao" name="observacao" rows="4" cols="50" placeholder="Digite suas observações aqui..."></textarea>
+
+      </div>
+      <!-- Carrinho de retirada para múltiplas peças -->
+      <div id="botoesRetirada" style="display: none; margin-bottom: 10px;">
+        <button
+          type="button"
+          id="btnAdicionarCarrinho"
+          style="
+            background: #388e3c;
+            color: #fff;
+            border-radius: 8px;
+            font-weight: 700;
+            padding: 7px 18px;
+            border: none;
+            font-size: 1em;
+            box-shadow: 0 2px 8px #388e3c22;
+            cursor: pointer;
+            opacity: 0.95;
+            margin-right: 8px;
+          "
+        >
+          Adicionar ao Carrinho
+        </button>
+      </div>
+      <button type="submit" id="btnRegistrar" disabled style="display: none;">Registrar</button>
+    </form>
+    <!-- Carrinho visual para retirada - MELHORADO -->
+    <!-- Melhoria visual do carrinho de retirada -->
+    <div
+      id="carrinhoBox"
+      style="
+        display: none;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 420px;
+        max-width: 97vw;
+        background: #f8fafc;
+        border-radius: 24px;
+        box-shadow: 0 8px 32px #15306055;
+        padding: 0 0 20px 0;
+        z-index: 10000;
+        border: 2.5px solid #153060;
+        font-family: Poppins, Arial, sans-serif;
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+        animation: carrinhoFadeIn 0.3s;
+      "
+    >
+      <div class="carrinho-titulo">
+        <h3>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff">
+            <path d="M7 18c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm10 0c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm-9.83-2l.94-2h7.72l.94 2h2.24l-1.68-3.36c-.18-.36-.54-.64-.94-.64h-9.72l-.28-.59c-.09-.18-.27-.41-.5-.41h-2v2h1.42l1.7 3.41c.18.36.54.59.94.59h9.72c.41 0 .77-.23.94-.59l1.7-3.41h1.42v-2h-2c-.23 0-.41.23-.5.41l-.28.59h-9.72c-.41 0-.77.28-.94.64l-1.68 3.36h2.24z"/>
+          </svg>
+          Carrinho de Retirada
+        </h3>
+        <button id="fecharCarrinho" type="button" class="carrinho-fechar" title="Fechar">×</button>
+      </div>
+      <div id="avisoCarrinho" class="carrinho-aviso">
+        Peça adicionada ao carrinho! 🎉
+      </div>
+      <div id="avisoEstoque" class="carrinho-aviso-erro">
+        Impossível retirar: peça sem estoque suficiente!
+      </div>
+      <div style="padding:0 18px;">
+        <table class="carrinho-table">
+          <thead>
+            <tr>
+              <th style="border-radius:8px 0 0 0;">Código</th>
+              <th>Peça</th>
+              <th>Qtd</th>
+              <th>Obs</th>
+              <th style="border-radius:0 8px 0 0;"></th>
+            </tr>
+          </thead>
+          <tbody id="carrinhoBody"></tbody>
+        </table>
+        <div id="carrinhoVazio" class="carrinho-vazio">
+          Nenhuma peça no carrinho.
+        </div>
+
+        <!-- OBSERVAÇÃO FINAL: coloque aqui -->
+        <div id="obsFinalRetiradaBox" style="margin-top:18px; margin-bottom:0; display:none;">
+          <label for="observacaoFinal" style="font-weight:600;color:#153060;">Observação da Retirada:</label>
+          <textarea
+            id="observacaoFinal"
+            rows="2"
+            style="width: 100%; border-radius: 6px; border: 1.5px solid #153060; margin-bottom: 8px; background: #f4faff; color: #102040;"
+            placeholder="Digite aqui a observação geral da retirada"
+            required
+          ></textarea>
+        </div>
+
+        <div id="carrinhoAcoes" class="carrinho-acoes">
+          <button
+            id="btnFinalizarRetirada"
+            type="button"
+            class="carrinho-finalizar-btn"
+            disabled
+          >
+            Finalizar Retirada
+          </button>
+        </div>
+      </div>
+    </div>
+    <h2 style="margin-top: 32px; color: #153060;">Estoque Atual</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Peça</th>
+          <th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody id="estoqueBody"></tbody>
+    </table>
+    <h2 style="margin-top: 32px; color: #153060;">Movimentações</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Código</th>
+          <th>Peça</th>
+          <th>Tipo</th>
+          <th>Quantidade</th>
+          <th>Usuário</th>
+        </tr>
+      </thead>
+      <tbody id="movimentacoesBody"></tbody>
+    </table>
+  </div>
+  <div id="popupReposicao" class="popup-reposicao">
+    <span id="popupReposicaoMsg"></span><br />
+    <button onclick="fecharPopupReposicao()">OK</button>
+  </div>
+  <!-- Adicione este botão flutuante para abrir o carrinho -->
+  <button
+    id="abrirCarrinho"
+    type="button"
+    title="Abrir Carrinho de Retirada"
+    style="
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: #153060;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      box-shadow: 0 4px 16px #15306044;
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    "
+  >
+    🛒
+  </button>
+  <script>
+    const estoque = {};
+    const movimentacoes = [];
+    carregarDados();
+
+    let termoPesquisa = "";
+    let usuarioAtual = "";
+    let operacaoEscolhida = "";
+
+    function mostrarPopupReposicao(msg) {
+      document.getElementById("popupReposicaoMsg").innerHTML = msg;
+      document.getElementById("popupReposicao").style.display = "block";
+    }
+    function fecharPopupReposicao() {
+      document.getElementById("popupReposicao").style.display = "none";
+    }
+
+    function atualizarTabelas() {
+      // Atualiza estoque com filtro de pesquisa
+      const estoqueBody = document.getElementById("estoqueBody");
+      estoqueBody.innerHTML = "";
+      let produtosReposicao = [];
+      Object.values(estoque)
+        .filter(
+          (item) =>
+            item.codigo.toLowerCase().includes(termoPesquisa) ||
+            item.produto.toLowerCase().includes(termoPesquisa)
+        )
+        .forEach((item) => {
+          let aviso = "";
+          // Alerta para 10 unidades ou menos
+          if (item.quantidade <= 10) {
+            aviso = `<span style="color:#d32f2f; font-weight:700; font-size:0.95em;"> ← ${item.produto} está precisando de reposição!</span>`;
+            // Adiciona à lista de produtos para popup
+            produtosReposicao.push(item.produto);
+          }
+          estoqueBody.innerHTML += `<tr>
+            <td>${item.codigo}</td>
+            <td>${item.produto} ${aviso}</td>
+            <td>${item.quantidade}</td>
+          </tr>`;
+        });
+
+      // Exibe popup se houver produtos precisando de reposicao
+      if (produtosReposicao.length > 0) {
+        mostrarPopupReposicao(
+          `Os seguintes itens estão precisando de reposição:<br><br>` +
+            produtosReposicao.map((p) => `<span style="color:#102040">${p}</span>`).join("<br>")
+        );
+      } else {
+        fecharPopupReposicao();
+      }
+
+      // Atualiza movimentações (sem filtro)
+      const movBody = document.getElementById("movimentacoesBody");
+      movBody.innerHTML = "";
+      movimentacoes.slice().reverse().forEach((mov) => {
+        movBody.innerHTML += `<tr>
+          <td>${mov.data}</td>
+          <td>${mov.codigo}</td>
+          <td>${mov.produto}</td>
+          <td class="${mov.tipo}">${mov.tipo.charAt(0).toUpperCase() + mov.tipo.slice(1)}</td>
+          <td>${mov.quantidade}</td>
+          <td>${mov.usuario || ""}</td>
+        </tr>`;
+      });
+    }
+
+    const btnRegistrar = document.getElementById("btnRegistrar");
+    const tipoSelect = document.getElementById("tipo");
+    const campos = ["codigo", "produto", "quantidade", "tipo"];
+
+    function validarCampos() {
+      const todosPreenchidos = campos.every((id) => {
+        const el = document.getElementById(id);
+        if (el.type === "number") return el.value && parseInt(el.value) > 0;
+        return el.value && el.value.trim() !== "";
+      });
+      btnRegistrar.disabled = !todosPreenchidos;
+    }
+
+    // Atualize o texto do botão conforme o tipo selecionado
+    function atualizarTextoBotao() {
+      if (tipoSelect.value === "saida") {
+        // Esconde o botão de registrar e mostra só os botões do carrinho
+        btnRegistrar.style.display = "none";
+        document.getElementById("botoesRetirada").style.display = "";
+      } else {
+        btnRegistrar.style.display = "";
+        document.getElementById("botoesRetirada").style.display = "none";
+        btnRegistrar.textContent = "Registrar";
+      }
+    }
+
+    campos.forEach((id) => {
+      document.getElementById(id).addEventListener("input", validarCampos);
+      document.getElementById(id).addEventListener("change", validarCampos);
+    });
+
+    // Sempre que o tipo mudar, atualize o texto do botão
+    tipoSelect.addEventListener("change", function () {
+      validarCampos();
+      atualizarTextoBotao();
+      atualizarBotoesRetirada();
+      atualizarCamposProduto();
+      atualizarCarrinho(); // <-- aqui
+    });
+
+    document.getElementById("formOperacao").onsubmit = function (e) {
+      e.preventDefault();
+      const op = document.getElementById("operacao").value;
+      if (!op) return;
+      operacaoEscolhida = op;
+      document.getElementById("formOperacao").style.display = "none";
+
+      if (op === "entrada") {
+        // Para adicionar produtos, pula direto para o formulário de produto
+        document.getElementById("formUsuario").style.display = "none";
+        document.getElementById("formProduto").style.display = "";
+        document.getElementById("tipo").value = "entrada";
+        document.getElementById("tipo").disabled = true;
+        atualizarTextoBotao();
+        validarCampos();
+        usuarioAtual = ""; // Limpa usuário, pois não é necessário para entrada
+      } else {
+        // Para retirar produtos, pede o usuário antes
+        document.getElementById("formUsuario").style.display = "";
+        document.getElementById("formProduto").style.display = "none";
+        document.getElementById("tipo").value = "saida";
+        document.getElementById("tipo").disabled = true;
+        atualizarTextoBotao();
+        validarCampos();
+      }
+    };
+
+    document.getElementById("formUsuario").onsubmit = function (e) {
+      e.preventDefault();
+      const usuario = document.getElementById("usuario").value.trim();
+      if (!usuario) return;
+      usuarioAtual = usuario;
+      document.getElementById("formUsuario").style.display = "none";
+      document.getElementById("formProduto").style.display = "";
+      document.getElementById("tipo").value = "saida";
+      document.getElementById("tipo").disabled = true;
+      atualizarTextoBotao();
+      validarCampos();
+      atualizarCarrinho(); // <-- aqui
+    };
+
+    document.getElementById("formProduto").onsubmit = function (e) {
+      e.preventDefault();
+      const codigo = document.getElementById("codigo").value.trim();
+      const produto = document.getElementById("produto").value.trim();
+      const quantidade = parseInt(document.getElementById("quantidade").value, 10);
+      const tipo = document.getElementById("tipo").value;
+
+      if (!codigo || !produto || quantidade <= 0 || !tipo) return;
+
+      if (!(codigo in estoque)) {
+        estoque[codigo] = { codigo, produto, quantidade: 0 };
+      }
+      if (tipo === "entrada") {
+        estoque[codigo].quantidade += quantidade;
+      } else {
+        estoque[codigo].quantidade -= quantidade;
+        if (estoque[codigo].quantidade < 0) estoque[codigo].quantidade = 0;
+      }
+
+      movimentacoes.push({
+        data: new Date().toLocaleString(),
+        codigo,
+        produto,
+        tipo,
+        quantidade,
+        usuario: usuarioAtual,
+      });
+
+      atualizarTabelas();
+      salvarDados();
+      this.reset();
+      validarCampos();
+
+      // Permite adicionar quantas vezes quiser na tela de entrada
+      if (operacaoEscolhida === "entrada") {
+        document.getElementById("formProduto").style.display = "";
+        document.getElementById("tipo").value = "entrada";
+        document.getElementById("tipo").disabled = true;
+        atualizarTextoBotao();
+        validarCampos();
+      } else {
+        // Para retirada, volta para a tela inicial após registrar
+        document.getElementById("formProduto").style.display = "none";
+        document.getElementById("formOperacao").style.display = "";
+        document.getElementById("tipo").disabled = false;
+        usuarioAtual = "";
+      }
+    };
+
+    // Evento para pesquisa
+    document.getElementById("pesquisa").addEventListener("input", function () {
+      termoPesquisa = this.value.trim().toLowerCase();
+      atualizarTabelas();
+    });
+
+    function salvarDados() {
+      localStorage.setItem("estoque", JSON.stringify(estoque));
+      localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
+    }
+    function carregarDados() {
+      const estoqueSalvo = localStorage.getItem("estoque");
+      const movSalvas = localStorage.getItem("movimentacoes");
+      if (estoqueSalvo) {
+        const obj = JSON.parse(estoqueSalvo);
+        Object.keys(obj).forEach((k) => (estoque[k] = obj[k]));
+      }
+      if (movSalvas) {
+        const arr = JSON.parse(movSalvas);
+        arr.forEach((m) => movimentacoes.push(m));
+      }
+    }
+
+    atualizarTabelas();
+    atualizarTextoBotao(); // Garante que o texto do botão esteja correto ao carregar a página
+
+    let carrinhoRetirada = [];
+
+    // Mostra/esconde botões do carrinho conforme o tipo de movimento
+    function atualizarBotoesRetirada() {
+      if (tipoSelect.value === "saida") {
+        btnRegistrar.style.display = "none";
+        document.getElementById("botoesRetirada").style.display = "";
+      } else {
+        btnRegistrar.style.display = "";
+        document.getElementById("botoesRetirada").style.display = "none";
+      }
+    }
+    tipoSelect.addEventListener("change", atualizarBotoesRetirada);
+
+    // Adiciona produto ao carrinho
+    document.getElementById("btnAdicionarCarrinho").onclick = function () {
+      const codigo = document.getElementById("codigo").value.trim();
+      let produto = document.getElementById("produto").value.trim();
+      const quantidade = parseInt(document.getElementById("quantidade").value, 10);
+      const observacao = document.getElementById("observacao") ? document.getElementById("observacao").value.trim() : "";
+
+      // Se o campo produto estiver oculto, tente buscar no estoque
+      if (!produto && estoque[codigo]) {
+        produto = estoque[codigo].produto;
+        document.getElementById("produto").value = produto;
+      }
+
+      // Verifica se observação é obrigatória para retirada
+      if (document.getElementById("tipo").value === "saida" && !observacao) {
+        alert("Preencha a observação para retirar a peça.");
+        document.getElementById("observacao").focus();
+        return;
+      }
+
+      // Verifica estoque disponível
+      if (!codigo || !produto || quantidade <= 0) {
+        alert("Preencha corretamente o código e a quantidade.");
+        return;
+      }
+      if (!(codigo in estoque) || estoque[codigo].quantidade < quantidade) {
+        // Mostra aviso de estoque insuficiente
+        const avisoEstoque = document.getElementById("avisoEstoque");
+        avisoEstoque.style.display = "block";
+        avisoEstoque.style.opacity = "1";
+        setTimeout(() => {
+          avisoEstoque.style.opacity = "0";
+          setTimeout(() => (avisoEstoque.style.display = "none"), 700);
+        }, 2500);
+        return;
+      }
+
+      carrinhoRetirada.push({ codigo, produto, quantidade, observacao });
+      document.getElementById("formProduto").reset();
+      validarCampos();
+      document.getElementById("btnFinalizarRetirada").disabled = carrinhoRetirada.length === 0;
+      atualizarCarrinho();
+
+      // Exibir aviso agradável que some após 2 segundos
+      const aviso = document.getElementById("avisoCarrinho");
+      aviso.style.opacity = "1";
+      aviso.style.display = "block";
+      aviso.textContent = `Produto "${produto}" adicionado ao carrinho! 🎉`;
+      setTimeout(() => {
+        aviso.style.opacity = "0";
+        setTimeout(() => (aviso.style.display = "none"), 600);
+      }, 2000);
+    };
+
+    // Finaliza a retirada de todos os itens do carrinho
+    document.getElementById("btnFinalizarRetirada").onclick = function () {
+      // Verifica se há itens no carrinho
+      if (carrinhoRetirada.length === 0) {
+        alert("Nenhum produto no carrinho para retirar.");
+        return;
+      }
+
+      // Verifica se a observação final foi preenchida
+      const obsFinal = document.getElementById("observacaoFinal").value.trim();
+      if (!obsFinal) {
+        alert("Por favor, preencha a observação da retirada.");
+        document.getElementById("observacaoFinal").focus();
+        return;
+      }
+
+      // Adiciona a observação final em cada item do carrinho (ou registre como preferir)
+      carrinhoRetirada = carrinhoRetirada.map(item => ({
+        ...item,
+        observacao: item.observacao ? item.observacao + " | " + obsFinal : obsFinal
+      }));
+
+      // Realiza a retirada de todos os itens do carrinho
+      carrinhoRetirada.forEach((item) => {
+        estoque[item.codigo].quantidade -= item.quantidade;
+        movimentacoes.push({
+          data: new Date().toLocaleString(),
+          codigo: item.codigo,
+          produto: item.produto,
+          tipo: "saida",
+          quantidade: item.quantidade,
+          usuario: usuarioAtual,
+          observacao: item.observacao,
+        });
+      });
+
+      atualizarTabelas();
+      salvarDados();
+      carrinhoRetirada = [];
+      atualizarCarrinho();
+      document.getElementById("formProduto").style.display = "none";
+      document.getElementById("formOperacao").style.display = "";
+      document.getElementById("tipo").disabled = false;
+      usuarioAtual = "";
+      document.getElementById("btnFinalizarRetirada").disabled = true;
+      alert("Retirada finalizada!");
+    };
+
+    function atualizarCamposProduto() {
+      // Esconde o campo Produto se for retirada
+      if (tipoSelect.value === "saida") {
+        document.getElementById("labelProduto").style.display = "none";
+        document.getElementById("produto").style.display = "none";
+        document.getElementById("obsBox").style.display = "";
+      } else {
+        document.getElementById("labelProduto").style.display = "";
+        document.getElementById("produto").style.display = "";
+        document.getElementById("obsBox").style.display = "none";
+      }
+    }
+
+    // Atualize sempre que o tipo mudar
+    tipoSelect.addEventListener("change", function () {
+      validarCampos();
+      atualizarTextoBotao();
+      atualizarBotoesRetirada();
+      atualizarCamposProduto();
+    });
+
+    // Garanta que ao abrir o formulário, o campo esteja correto
+    document.addEventListener("DOMContentLoaded", atualizarCamposProduto);
+
+    // Ao clicar em "Retirar Agora", registra a retirada imediatamente (sem carrinho)
+    btnRegistrar.onclick = function (e) {
+      if (tipoSelect.value === "saida") {
+        e.preventDefault();
+        const codigo = document.getElementById("codigo").value.trim();
+        const produto = document.getElementById("produto").value.trim();
+        const quantidade = parseInt(document.getElementById("quantidade").value, 10);
+        const observacao = document.getElementById("observacao") ? document.getElementById("observacao").value.trim() : "";
+
+        if (!codigo || quantidade <= 0) return;
+
+        if (!(codigo in estoque)) {
+          estoque[codigo] = { codigo, produto, quantidade: 0 };
+        }
+        estoque[codigo].quantidade -= quantidade;
+        if (estoque[codigo].quantidade < 0) estoque[codigo].quantidade = 0;
+
+        movimentacoes.push({
+          data: new Date().toLocaleString(),
+          codigo,
+          produto,
+          tipo: "saida",
+          quantidade,
+          usuario: usuarioAtual,
+          observacao,
+        });
+
+        atualizarTabelas();
+        salvarDados();
+        document.getElementById("formProduto").reset();
+        validarCampos();
+        document.getElementById("formProduto").style.display = "none";
+        document.getElementById("formOperacao").style.display = "";
+        document.getElementById("tipo").disabled = false;
+        usuarioAtual = "";
+        alert("Retirada realizada!");
+      }
+    };
+
+    function atualizarCarrinho() {
+      const carrinhoBox = document.getElementById("carrinhoBox");
+      const carrinhoBody = document.getElementById("carrinhoBody");
+      const carrinhoVazio = document.getElementById("carrinhoVazio");
+      if (!carrinhoBox || !carrinhoBody || !carrinhoVazio) return;
+
+      // Alteração: mostra o carrinho sempre que a operação escolhida for "saida"
+      if (operacaoEscolhida === "saida") {
+        carrinhoBox.style.display = "";
+        if (carrinhoRetirada.length > 0) {
+          carrinhoBody.innerHTML = "";
+          carrinhoRetirada.forEach((item, idx) => {
+            carrinhoBody.innerHTML += `
+              <tr>
+                <td>${item.codigo}</td>
+                <td>${item.produto}</td>
+                <td>${item.quantidade}</td>
+                <td>${item.observacao || ""}</td>
+                <td>
+                  <button type="button" onclick="removerDoCarrinho(${idx})" style="background:#d32f2f; color:#fff; border-radius:6px; border:none; padding:2px 8px; cursor:pointer;">X</button>
+                </td>
+              </tr>
+            `;
+          });
+          carrinhoVazio.style.display = "none";
+        } else {
+          carrinhoBody.innerHTML = "";
+          carrinhoVazio.style.display = "";
+        }
+        document.getElementById("btnFinalizarRetirada").disabled = carrinhoRetirada.length === 0;
+      } else {
+        carrinhoBox.style.display = "none";
+      }
+    }
+
+    // Função global para remover item do carrinho
+    window.removerDoCarrinho = function (idx) {
+      carrinhoRetirada.splice(idx, 1);
+      document.getElementById("btnFinalizarRetirada").disabled = carrinhoRetirada.length === 0;
+      atualizarCarrinho();
+    };
+
+    // Preencher automaticamente o campo produto ao digitar o código
+    document.getElementById("codigo").addEventListener("blur", function () {
+      const codigo = this.value.trim();
+      if (codigo && estoque[codigo]) {
+        document.getElementById("produto").value = estoque[codigo].produto;
+      }
+    });
+
+    // Fechar o carrinho ao clicar no botão de fechar
+    document.getElementById("fecharCarrinho").onclick = function () {
+      document.getElementById("carrinhoBox").style.display = "none";
+    };
+
+    // Abrir o carrinho ao clicar no botão flutuante
+    document.getElementById("abrirCarrinho").onclick = function () {
+      document.getElementById("carrinhoBox").style.display = "";
+      document.getElementById("btnFinalizarRetirada").disabled = carrinhoRetirada.length === 0;
+      document.getElementById("obsFinalRetiradaBox").style.display = "";
+    };
+  </script>
+</body>
+</html>
